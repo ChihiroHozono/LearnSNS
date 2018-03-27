@@ -32,6 +32,26 @@
     // emilの空チェック
     if($input_email==''){
       $errors['input_email'] = 'blank';
+    }else{
+      // 重複エラーのチェック
+      // データベースに接続
+      require('../db_connect.php');
+
+      // アドレスを一件のみ
+      // 入力されたemilと合致するデータの件数を取得
+      // asでCOUNT(*)に別名をつける
+      // COUNTでデータの数を集めれるっぽい
+      $sql = 'SELECT COUNT(*) as `cnt` FROM `users` WHERE `email` = ?';
+      $data = array($input_email);
+      $stmt = $dbh->prepare($sql);
+      $stmt->execute($data);
+
+      $rec = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      // 一件以上であれば、重複エラーの印を保存
+      if($rec["cnt"] >0){
+        $errors["input_email"] = "deplicate";
+      }
     }
 
     // パスワードのチェック
@@ -107,12 +127,16 @@
             <?php if((isset($errors["name"]))&&($errors["name"]=='blank')){ ?>
               <p class="text-danger">ユーザー名を入力してください</p>
             <?php  }?>
+
           </div>
           <div class="form-group">
             <label for="email">メールアドレス</label>
             <input type="email" name="input_email" class="form-control" id="email" placeholder="example@gmail.com" value="<?php echo $input_email; ?>">
             <?php if((isset($errors["input_email"]))&&($errors["input_email"]=='blank')){ ?>
               <p class="text-danger">メールアドレスを入力</p>
+            <?php  }?>
+            <?php if((isset($errors["input_email"]))&&($errors["input_email"]=='deplicate')){ ?>
+              <p class="text-danger">このアドレスは既に使われています。</p>
             <?php  }?>
           </div>
           <div class="form-group">
