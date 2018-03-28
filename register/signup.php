@@ -21,6 +21,7 @@
   $input_password ='';
   // 入力の不備をチェック
   if(!empty($_POST)){
+    // 繰り返し使うので簡単な変数名に代入
     $name = $_POST["input_name"];
     $input_email = $_POST["input_email"];
     $input_password = $_POST["input_password"];
