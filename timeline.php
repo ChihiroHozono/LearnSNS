@@ -79,8 +79,21 @@
         // ライク済み
         $rec["like_flag"] = 1;
       }
-      // 配列にデータを追加
-      $timeline[] = $rec;
+
+      // いいね済みのみの表示指示された時、ログインユーザーがいいね！済みのデータだけをタイムラインに表示するようにする。
+
+      if((isset($_GET["feed_select"]) && $_GET["feed_select"] == "likes")){
+        // いいねしたツイートのみを表示
+        if($rec["like_flag"] == 1){
+          $timeline[] = $rec;
+        }
+
+      }else{
+        // 配列にデータを追加
+        // $timelineに入ったデータがタイムラインに表示される
+        $timeline[] = $rec;
+
+      }
     }
 
 
@@ -138,10 +151,20 @@
     <div class="row">
       <div class="col-xs-3">
         <ul class="nav nav-pills nav-stacked">
-          <li class="active"><a href="timeline.php?feed_select=news">新着順</a></li>
-          <li><a href="timeline.php?feed_select=likes">いいね！済み</a></li>
-          <li><a href="timeline.php?feed_select=follows">フォロー</a></li>
-        </ul>
+          <?php if(!isset($_GET["feed_select"]) || (isset($_GET["feed_select"]) && $_GET["feed_select"] == "news")){ ?>
+            <li class="active">
+          <?php }else{ ?>
+            <li >
+          <?php } ?>
+            <a href="timeline.php?feed_select=news">新着順</a></li>
+          <?php if((isset($_GET["feed_select"]) && $_GET["feed_select"] == "likes")){ ?>
+            <li class="active">
+          <?php }else{ ?>
+            <li>
+          <?php }?>
+          <a href="timeline.php?feed_select=likes">いいね！済み</a></li>
+         <!--  <li><a href="timeline.php?feed_select=follows">フォロー</a></li>
+ -->        </ul>
       </div>
       <div class="col-xs-9">
         <div class="feed_form thumbnail">
