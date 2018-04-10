@@ -6,6 +6,18 @@
 
   $input_email = '';
   $input_password ='';
+
+
+  // クッキー情報の存在をチェックしあればポスト送信されて来たように$_POSTに代入
+  // 今の環境だとif(isset() && !empty())と書けばエラーが起きてもエラーは表示されない
+  // emptyは変数そのものが無いとエラーを吐く
+  if(isset($_COOKIE['email']) && !empty($_COOKIE['email'])){
+    $_POST["input_email"] = $_COOKIE["email"];
+    $_POST["input_password"] = $_COOKIE["password"];
+    $_POST["save"] = "on";
+  }
+
+
   if(!empty($_POST)){
     $input_email = $_POST["input_email"];
     $input_password = $_POST["input_password"];
@@ -40,6 +52,16 @@
             // セッションにIDを保存
             // 他の情報はその都度取ってくる方が新しい情報が取れる
             $_SESSION['id'] = $rec['id'];
+
+            // 自動ログインが指示されていたらクッキーにログイン情報を保存
+            if($_POST["save"] == "on"){
+              // time() 現在時間を1970/01/01 0:00:00から秒数で表した数字
+              // 60*60*24*14 二週間分の秒数
+              setcookie('email',$input_email,time() + 60*60*24*14);
+              setcookie('password',$input_password,time() + 60*60*24*14);
+            }
+
+
             // timeline.phpに移動
             header('Location:timeline.php');
             }else{
@@ -81,6 +103,11 @@
             <?php if((isset($errors["input_password"]))&&($errors["input_password"]=='blank')){ ?>
               <p class="text-danger">パスワードを入力してください</p>
             <?php  }?>
+          </div>
+          <div class="form-group">
+             <label for="save">自動サインイン</label>
+             <!-- checkedを付けるとチェックが付いた状態で表示される -->
+             <input type="checkbox" name="save" value="on" checked>
           </div>
           <input type="submit" class="btn btn-info" value="サインイン">
         </form>

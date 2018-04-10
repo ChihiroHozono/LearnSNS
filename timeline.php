@@ -1,22 +1,24 @@
 <?php
   session_start();
-
   require('db_connect.php');
-  // ナビバーに表示するためログインユーザーの情報を取得
-  $sql = 'SELECT * FROM `users` WHERE `id` ='.$_SESSION['id'];
+  require('signin_check.php');
 
+  // ナビバーに表示するためログインユーザーの情報を取得
+
+  // SQL文
+  $sql = 'SELECT * FROM `users` WHERE `id` ='.$_SESSION['id'];
+  // SQL文の実行
   $stmt = $dbh->prepare($sql);
   $stmt->execute();
 
   $login_user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-
-  // セッション変数にユーザーのidが入っているのか
-  // var_dump($login_user);
   // imgファイルのパス
   $img_path = 'user_profile_img/'.$login_user['img_name'];
 
-  // つぶやきを保存
+
+
+  // 投稿するを押した時にPOST送信されつぶやきを保存
   if(isset($_POST) && !empty($_POST)){
     // var_dump($_POST["feed"]);
     // データベースに接続
@@ -27,6 +29,7 @@
 
     require('db_connect.php');
 
+    // テーブルにデータを追加
     $sql = 'INSERT INTO `feeds` SET `feed`=?, `user_id`=?,`created`= NOW()';
       // インサート実行
     $data = array($feed,$user_id);
@@ -38,6 +41,48 @@
   // 必要なデータ
   // 画像、名前、コメントuser_idとコメントのidを結びつける
     $sql = 'SELECT * FROM `feeds`';
+
+
+
+// つぶやきの取得
+        // timelineの情報を取得
+    // 最新情報順にデータを取得
+    $sql ='SELECT `feeds`.*,`users`.`name`,`users`.`img_name` as `profile_img` FROM `feeds` INNER JOIN `users` ON `feeds`.`user_id` = `users`.`id` ORDER BY `feeds`.`created` DESC';
+    $stmt = $dbh->prepare($sql);
+    $stmt->execute();
+
+    // タイムラインの情報を格納
+    $timeline = array();
+    while(1){
+      $rec = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      // 最後まで来たら終了
+      if($rec == false){
+        break;
+      }
+
+      // ログインユーザーが現在取得フィードにライクしているかどうか
+      // $_SESSION['id'] ログインしているユーザーのID
+      // $rec['id'] 現在取得したfeedのID
+
+      $like_sql = "SELECT COUNT(*) as `cnt` FROM `Likes` WHERE `feed_id` = ? AND `user_id` = ? ";
+      $like_data = array($rec["id"],$_SESSION["id"]);
+      $like_stmt = $dbh->prepare($like_sql);
+      $like_stmt->execute($like_data);
+
+      $like_rec = $like_stmt->fetch(PDO::FETCH_ASSOC);
+
+      if($like_rec["cnt"] == 0){
+        // ライクしてない
+        $rec["like_flag"] = 0;
+      }else{
+        // ライク済み
+        $rec["like_flag"] = 1;
+      }
+      // 配列にデータを追加
+      $timeline[] = $rec;
+    }
+
 
 
 
@@ -53,6 +98,7 @@
   <link rel="stylesheet" type="text/css" href="assets/css/style.css">
 </head>
 <body style="margin-top: 60px; background: #E4E6EB;">
+  
   <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container">
       <div class="navbar-header">
@@ -94,7 +140,7 @@
         <ul class="nav nav-pills nav-stacked">
           <li class="active"><a href="timeline.php?feed_select=news">新着順</a></li>
           <li><a href="timeline.php?feed_select=likes">いいね！済み</a></li>
-          <!-- <li><a href="timeline.php?feed_select=follows">フォロー</a></li> -->
+          <li><a href="timeline.php?feed_select=follows">フォロー</a></li>
         </ul>
       </div>
       <div class="col-xs-9">
@@ -106,36 +152,14 @@
             <input type="submit" value="投稿する" class="btn btn-primary">
           </form>
         </div>
-          <div class="thumbnail">
-            <div class="row">
-              <div class="col-xs-1">
-                <img src="https://placehold.jp/40x40.png" width="40">
-              </div>
-              <div class="col-xs-11">
-                名前 aaa<br>
-                <a href="#" style="color: #7F7F7F;">2018-03-03</a>
-              </div>
-            </div>
-            <div class="row feed_content">
-              <div class="col-xs-12" >
-                <span style="font-size: 24px;">つぶやき</span>
-              </div>
-            </div>
-            <div class="row feed_sub">
-              <div class="col-xs-12">
-                <form method="POST" action="" style="display: inline;">
-                  <input type="hidden" name="feed_id" >
 
-                    <input type="hidden" name="like" value="like">
-                    <button type="submit" class="btn btn-default btn-xs"><i class="fa fa-thumbs-up" aria-hidden="true"></i>いいね！</button>
-                </form>
-                <span class="like_count">いいね数 : 100</span>
-                <span class="comment_count">コメント数 : 9</span>
-                  <a href="#" class="btn btn-success btn-xs">編集</a>
-                  <a href="#" class="btn btn-danger btn-xs">削除</a>
-              </div>
-         a   </div>
-          </div>
+        <!-- 件数分繰り返し -->
+        <?php  foreach ($timeline as $timeline_each){
+          // phpを読み込み
+          include("timeline_one.php");
+        } ?>
+
+
         <nav aria-label="Page navigation">
           <ul class="pager">
             <li class="previous disabled"><a href="#"><span aria-hidden="true">&larr;</span> Older</a></li>
